@@ -1,0 +1,200 @@
+
+# get from the txt for each line a string and the answer
+def getData(txt_name):
+    data_list = []
+    answer_list = []
+    with open(txt_name, 'r') as file:
+        for line in file:
+            # Split the line into words
+            words = line.split()
+            string_bit = words[0]
+            answer = words[1]
+            data_list.append(string_bit)
+            answer_list.append(answer)
+    return data_list, answer_list
+
+
+import numpy as np
+import random
+
+# Genetic Algorithm parameters
+POPULATION_SIZE = 100
+NUM_GENERATIONS = 100
+MUTATION_RATE = 0.01
+
+# Neural Network parameters
+INPUT_SIZE = 16
+HIDDEN_SIZE = 32
+OUTPUT_SIZE = 1
+
+
+# Load training data from file
+def load_data(file_path):
+    data = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            line = line.split()
+            string = line[0]
+            label = int(line[1])
+            data.append((string, label))
+    return data
+
+def split_train_test_data(data, train_ratio=0.8):
+    random.shuffle(data)
+    train_size = int(len(data) * train_ratio)
+    train_data = data[:train_size]
+    test_data = data[train_size:]
+    return train_data, test_data
+
+# Preprocess the data
+def preprocess_data(data):
+    processed_data = []
+    for string, label in data:
+        # Convert string to numpy array of integers
+        encoded_string = np.array([int(char) for char in string])
+        processed_data.append((encoded_string, label))
+    return processed_data
+
+
+# Define the neural network architecture
+class NeuralNetwork:
+    def __init__(self):
+        self.weights1 = np.random.randn(INPUT_SIZE * HIDDEN_SIZE).reshape(INPUT_SIZE, HIDDEN_SIZE) # 16 * 32
+        self.weights2 = np.random.randn(HIDDEN_SIZE * OUTPUT_SIZE).reshape(HIDDEN_SIZE, OUTPUT_SIZE) # 32 * 1
+
+    def forward(self, x):
+        self.hidden = np.dot(x, self.weights1)
+        self.hidden_activation = self.sigmoid(self.hidden)
+        self.output = np.dot(self.hidden_activation, self.weights2)
+        self.output_activation = self.sigmoid(self.output)
+        return self.output_activation
+
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def copy(self):
+        copy = NeuralNetwork()
+        copy.weights1 = self.weights1.copy()
+        copy.weights2 = self.weights2.copy()
+        return copy
+
+
+# Genetic Algorithm
+def genetic_algorithm(data):
+    population = [NeuralNetwork() for _ in range(POPULATION_SIZE)]
+
+    for generation in range(NUM_GENERATIONS):
+        print("Generation {}".format(generation + 1))
+        # Evaluate fitness
+        fitness_scores = []
+        for individual in population:
+            fitness_scores.append(evaluate_fitness(individual, data))
+
+        # Select parents for crossover
+        # parents = select_parents(population, fitness_scores)
+
+        # Create new generation through crossover and mutation
+        offspring = new_population(population, fitness_scores)
+        # best_score = max(fitness_scores)
+        # best_individual = population[fitness_scores.index(best_score)]
+        # offspring.append(best_individual)
+
+        #print the score of the best individual in the generation
+        print("Best individual score: {:.2f}%".format(max(fitness_scores) * 100))
+
+        population = offspring
+
+    # Select the fittest individual
+    best_individual = max(population, key=lambda x: evaluate_fitness(x, data))
+    return best_individual
+#get from the population the top 5 individuals with the highest fitness score
+def new_population(population, fitness_scores):
+    new_population_list = []
+    #sort the population by the fitness score reverse
+    sorted_population = [x for _, x in sorted(zip(fitness_scores, population), key=lambda pair: pair[0])]
+    sorted_population.reverse()
+    #add to the new group 10 copies of the best individual, 9 copies of the second best individual and so on
+    for i in range(10):
+        new_population_list.append(sorted_population[i].copy())
+        for j in range(10-i):
+            muted_individual = mutate(sorted_population[i].copy())
+            new_population_list.append(muted_individual)
+    #get the top 20% of the population
+    to20_population = sorted_population[:int(len(sorted_population)*0.2)]
+    for _ in range(POPULATION_SIZE - len(new_population_list)):
+        parent1, parent2 = random.choice(to20_population), random.choice(population)
+        child = crossover(parent1, parent2)
+        child = mutate(child)
+        new_population_list.append(child)
+
+    return new_population_list
+
+
+
+
+
+# Evaluate fitness based on neural network performance
+def evaluate_fitness(individual, data):
+    correct_predictions = 0
+    for input_data, label in data:
+        prediction = individual.forward(input_data)
+        predicted_label = 1 if prediction >= 0.5 else 0
+        if predicted_label == label:
+            correct_predictions += 1
+    fitness = correct_predictions / len(data)
+    return fitness
+
+
+# Select parents for crossover based on fitness scores
+def select_parents(population, fitness_scores):
+    total_fitness = sum(fitness_scores)
+    probabilities = [fitness / total_fitness for fitness in fitness_scores]
+    parents = np.random.choice(population, size=POPULATION_SIZE, p=probabilities)
+    return parents
+
+
+# Perform crossover between two parents
+def crossover(parent1, parent2):
+    child = NeuralNetwork()
+    child.weights1 = (parent1.weights1 + parent2.weights1) / 2
+    child.weights2 = (parent1.weights2 + parent2.weights2) / 2
+    return child
+
+
+# Perform mutation on an individual
+def mutate(individual):
+    for weight in [individual.weights1, individual.weights2]:
+        mask = np.random.uniform(0, 1, size=weight.shape) < MUTATION_RATE
+        random_values = np.random.randn(*weight.shape)
+        weight[mask] += random_values[mask]
+    return individual
+
+
+# Main code
+def main():
+    # Load and preprocess data
+    data = load_data('nn0.txt')
+    train_data , test_data = split_train_test_data(data)
+    processed_data = preprocess_data(train_data)
+
+    # Run genetic algorithm to evolve the neural network
+    best_individual = genetic_algorithm(processed_data)
+
+    # Test the best individual on new data
+    processed_test_data = preprocess_data(test_data)
+
+    correct_predictions = 0
+    for input_data, label in processed_test_data:
+        prediction = best_individual.forward(input_data)
+        predicted_label = 1 if prediction >= 0.5 else 0
+        if predicted_label == label:
+            correct_predictions += 1
+
+    accuracy = correct_predictions / len(processed_test_data)
+    print("Accuracy: {:.2f}%".format(accuracy * 100))
+
+
+if __name__ == '__main__':
+    main()
+
+
