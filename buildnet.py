@@ -1,3 +1,5 @@
+import sys
+
 
 # get from the txt for each line a string and the answer
 def getData(txt_name):
@@ -19,8 +21,11 @@ import random
 
 # Genetic Algorithm parameters
 POPULATION_SIZE = 100
-NUM_GENERATIONS = 100
+NUM_GENERATIONS = 2
 MUTATION_RATE = 0.01
+TRAIN_RATIO = 0.4
+TRAIN_DATA_PATH = 'train.txt'
+
 
 # Neural Network parameters
 INPUT_SIZE = 16
@@ -39,7 +44,7 @@ def load_data(file_path):
             data.append((string, label))
     return data
 
-def split_train_test_data(data, train_ratio=0.8):
+def split_train_test_data(data, train_ratio=TRAIN_RATIO):
     random.shuffle(data)
     train_size = int(len(data) * train_ratio)
     train_data = data[:train_size]
@@ -59,8 +64,8 @@ def preprocess_data(data):
 # Define the neural network architecture
 class NeuralNetwork:
     def __init__(self):
-        self.weights1 = np.random.randn(INPUT_SIZE * HIDDEN_SIZE).reshape(INPUT_SIZE, HIDDEN_SIZE) # 16 * 32
-        self.weights2 = np.random.randn(HIDDEN_SIZE * OUTPUT_SIZE).reshape(HIDDEN_SIZE, OUTPUT_SIZE) # 32 * 1
+        self.weights1 = np.random.randn(INPUT_SIZE * HIDDEN_SIZE).reshape(INPUT_SIZE, HIDDEN_SIZE)   # 16 * 32
+        self.weights2 = np.random.randn(HIDDEN_SIZE * OUTPUT_SIZE).reshape(HIDDEN_SIZE, OUTPUT_SIZE)   # 32 * 1
 
     def forward(self, x):
         self.hidden = np.dot(x, self.weights1)
@@ -82,9 +87,14 @@ class NeuralNetwork:
 # Genetic Algorithm
 def genetic_algorithm(data):
     population = [NeuralNetwork() for _ in range(POPULATION_SIZE)]
-
+    global MUTATION_RATE
     for generation in range(NUM_GENERATIONS):
         print("Generation {}".format(generation + 1))
+
+        if generation == 60:
+            MUTATION_RATE = 0.001
+        if generation == 90:
+            MUTATION_RATE = 0.0001
         # Evaluate fitness
         fitness_scores = []
         for individual in population:
@@ -120,9 +130,9 @@ def new_population(population, fitness_scores):
             muted_individual = mutate(sorted_population[i].copy())
             new_population_list.append(muted_individual)
     #get the top 20% of the population
-    to20_population = sorted_population[:int(len(sorted_population)*0.2)]
+    top_population = sorted_population[:int(len(sorted_population)*0.10)]
     for _ in range(POPULATION_SIZE - len(new_population_list)):
-        parent1, parent2 = random.choice(to20_population), random.choice(population)
+        parent1, parent2 = random.choice(population), random.choice(population)
         child = crossover(parent1, parent2)
         child = mutate(child)
         new_population_list.append(child)
@@ -165,10 +175,24 @@ def crossover(parent1, parent2):
 def mutate(individual):
     for weight in [individual.weights1, individual.weights2]:
         mask = np.random.uniform(0, 1, size=weight.shape) < MUTATION_RATE
-        random_values = np.random.randn(*weight.shape)
+        random_values = np.random.randn(*weight.shape) * 4
         weight[mask] += random_values[mask]
     return individual
 
+#this function get the best individual and write its weights to a file
+def write_weights_to_file(best_individual):
+    file = open("wnet.txt", "w")
+    #write the size of the layers
+    file.write( str(INPUT_SIZE) + " " + str(HIDDEN_SIZE) + "\n")
+    for row in best_individual.weights1:
+        for weight in row:
+            file.write(str(weight) + " ")
+        file.write("\n")
+    for row in best_individual.weights2:
+        for weight in row:
+            file.write(str(weight) + " ")
+        file.write("\n")
+    file.close()
 
 # Main code
 def main():
@@ -192,9 +216,12 @@ def main():
 
     accuracy = correct_predictions / len(processed_test_data)
     print("Accuracy: {:.2f}%".format(accuracy * 100))
+    write_weights_to_file(best_individual)
 
 
 if __name__ == '__main__':
+    data_file_name = sys.argv[1]
+    test_file_name = sys.argv[2]
     main()
 
 
