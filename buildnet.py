@@ -1,3 +1,5 @@
+from statistics import mean
+from graph import PercentPerGeneration
 import sys
 
 
@@ -88,6 +90,8 @@ class NeuralNetwork:
 def genetic_algorithm(data):
     population = [NeuralNetwork() for _ in range(POPULATION_SIZE)]
     global MUTATION_RATE
+    best, worst, avrg = [], [], []
+
     for generation in range(NUM_GENERATIONS):
         print("Generation {}".format(generation + 1))
 
@@ -109,6 +113,9 @@ def genetic_algorithm(data):
         # best_individual = population[fitness_scores.index(best_score)]
         # offspring.append(best_individual)
 
+        worst.append(min(fitness_scores) * 100)
+        avrg.append(mean(fitness_scores) * 100)
+        best.append(max(fitness_scores) * 100)
         #print the score of the best individual in the generation
         print("Best individual score: {:.2f}%".format(max(fitness_scores) * 100))
 
@@ -116,6 +123,7 @@ def genetic_algorithm(data):
 
     # Select the fittest individual
     best_individual = max(population, key=lambda x: evaluate_fitness(x, data))
+    PercentPerGeneration(best, worst, avrg)
     return best_individual
 #get from the population the top 5 individuals with the highest fitness score
 def new_population(population, fitness_scores):
