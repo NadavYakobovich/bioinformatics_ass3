@@ -23,15 +23,16 @@ import random
 
 # Genetic Algorithm parameters
 POPULATION_SIZE = 100
-NUM_GENERATIONS = 2
+NUM_GENERATIONS = 350
 MUTATION_RATE = 0.01
-TRAIN_RATIO = 0.4
+TRAIN_RATIO = 0.6
+RANDOM_RATIO = 0.1
 TRAIN_DATA_PATH = 'train.txt'
 
 
 # Neural Network parameters
 INPUT_SIZE = 16
-HIDDEN_SIZE = 32
+HIDDEN_SIZE = 4
 OUTPUT_SIZE = 1
 
 
@@ -66,8 +67,8 @@ def preprocess_data(data):
 # Define the neural network architecture
 class NeuralNetwork:
     def __init__(self):
-        self.weights1 = np.random.randn(INPUT_SIZE * HIDDEN_SIZE).reshape(INPUT_SIZE, HIDDEN_SIZE)   # 16 * 32
-        self.weights2 = np.random.randn(HIDDEN_SIZE * OUTPUT_SIZE).reshape(HIDDEN_SIZE, OUTPUT_SIZE)   # 32 * 1
+        self.weights1 = np.random.randn(INPUT_SIZE * HIDDEN_SIZE).reshape(INPUT_SIZE, HIDDEN_SIZE)   - 0.5 # 16 * 32
+        self.weights2 = np.random.randn(HIDDEN_SIZE * OUTPUT_SIZE).reshape(HIDDEN_SIZE, OUTPUT_SIZE)  - 0.5  # 32 * 1
 
     def forward(self, x):
         self.hidden = np.dot(x, self.weights1)
@@ -89,16 +90,11 @@ class NeuralNetwork:
 # Genetic Algorithm
 def genetic_algorithm(data):
     population = [NeuralNetwork() for _ in range(POPULATION_SIZE)]
-    global MUTATION_RATE
+    global RANDOM_RATIO
     best, worst, avrg = [], [], []
 
     for generation in range(NUM_GENERATIONS):
         print("Generation {}".format(generation + 1))
-
-        if generation == 60:
-            MUTATION_RATE = 0.001
-        if generation == 90:
-            MUTATION_RATE = 0.0001
         # Evaluate fitness
         fitness_scores = []
         for individual in population:
@@ -109,10 +105,6 @@ def genetic_algorithm(data):
 
         # Create new generation through crossover and mutation
         offspring = new_population(population, fitness_scores)
-        # best_score = max(fitness_scores)
-        # best_individual = population[fitness_scores.index(best_score)]
-        # offspring.append(best_individual)
-
         worst.append(min(fitness_scores) * 100)
         avrg.append(mean(fitness_scores) * 100)
         best.append(max(fitness_scores) * 100)
@@ -132,13 +124,19 @@ def new_population(population, fitness_scores):
     sorted_population = [x for _, x in sorted(zip(fitness_scores, population), key=lambda pair: pair[0])]
     sorted_population.reverse()
     #add to the new group 10 copies of the best individual, 9 copies of the second best individual and so on
-    for i in range(10):
-        new_population_list.append(sorted_population[i].copy())
-        for j in range(10-i):
-            muted_individual = mutate(sorted_population[i].copy())
-            new_population_list.append(muted_individual)
+
+    # for i in range(10):
+    #     new_population_list.append(sorted_population[i].copy())
+    #     for j in range(10-i):
+    #         muted_individual = mutate(sorted_population[i].copy())
+    #         new_population_list.append(muted_individual)
+    new_population_list.append(sorted_population[0].copy())
+    for i in range(60):
+        muted_individual = mutate(sorted_population[0].copy())
+        new_population_list.append(muted_individual)
+
     #get the top 20% of the population
-    top_population = sorted_population[:int(len(sorted_population)*0.10)]
+    top_population = sorted_population[:int(len(sorted_population)*0.20)]
     for _ in range(POPULATION_SIZE - len(new_population_list)):
         parent1, parent2 = random.choice(population), random.choice(population)
         child = crossover(parent1, parent2)
@@ -180,12 +178,20 @@ def crossover(parent1, parent2):
 
 
 # Perform mutation on an individual
+# def mutate(individual):
+#     for weight in [individual.weights1, individual.weights2]:
+#         mask = np.random.uniform(0, 1, size=weight.shape) < MUTATION_RATE
+#         random_values = np.random.randn(*weight.shape)
+#         weight[mask] += random_values[mask]
+#     return individual
+
 def mutate(individual):
     for weight in [individual.weights1, individual.weights2]:
         mask = np.random.uniform(0, 1, size=weight.shape) < MUTATION_RATE
-        random_values = np.random.randn(*weight.shape) * 4
+        random_values = np.random.choice([-RANDOM_RATIO, RANDOM_RATIO], size=weight.shape)
         weight[mask] += random_values[mask]
     return individual
+
 
 #this function get the best individual and write its weights to a file
 def write_weights_to_file(best_individual):
