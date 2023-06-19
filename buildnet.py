@@ -211,7 +211,7 @@ def write_weights_to_file(best_individual):
 # Main code
 def main():
     # Load and preprocess data
-    data = load_data('nn0.txt')
+    data = load_data('nn1.txt')
     train_data , test_data = split_train_test_data(data)
     processed_data = preprocess_data(train_data)
 
