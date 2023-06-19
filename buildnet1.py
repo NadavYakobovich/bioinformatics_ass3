@@ -23,7 +23,7 @@ import random
 
 # Genetic Algorithm parameters
 POPULATION_SIZE = 100
-NUM_GENERATIONS = 350
+NUM_GENERATIONS = 250
 MUTATION_RATE = 0.01
 TRAIN_RATIO = 0.6
 RANDOM_RATIO = 0.1
@@ -47,14 +47,14 @@ def load_data(file_path):
             data.append((string, label))
     return data
 
-def split_train_test_data(data, train_ratio=TRAIN_RATIO):
-    random.shuffle(data)
-    train_size = int(len(data) * train_ratio)
-    train_data = data[:train_size]
-    test_data = data[train_size:]
-    return train_data, test_data
+# def split_train_test_data(data, train_ratio=TRAIN_RATIO):
+#     random.shuffle(data)
+#     train_size = int(len(data) * train_ratio)
+#     train_data = data[:train_size]
+#     test_data = data[train_size:]
+#     return train_data, test_data
 
-# Preprocess the data
+# Preprocess the data -> make the string to np Arrays
 def preprocess_data(data):
     processed_data = []
     for string, label in data:
@@ -186,7 +186,7 @@ def mutate(individual):
 
 #this function get the best individual and write its weights to a file
 def write_weights_to_file(best_individual):
-    file = open("wnet.txt", "w")
+    file = open("wnet1.txt", "w")
     #write the size of the layers
     file.write( str(INPUT_SIZE) + " " + str(HIDDEN_SIZE) + "\n")
     for row in best_individual.weights1:
@@ -200,17 +200,17 @@ def write_weights_to_file(best_individual):
     file.close()
 
 # Main code
-def main():
+def main(train_file, test_file):
     # Load and preprocess data
-    data = load_data('nn1.txt')
-    train_data , test_data = split_train_test_data(data)
+    train_data = load_data(train_file)
+    test_data = load_data(test_file)
     processed_data = preprocess_data(train_data)
+    processed_test_data = preprocess_data(test_data)
 
     # Run genetic algorithm to evolve the neural network
     best_individual = genetic_algorithm(processed_data)
 
     # Test the best individual on new data
-    processed_test_data = preprocess_data(test_data)
 
     correct_predictions = 0
     for input_data, label in processed_test_data:
@@ -225,8 +225,8 @@ def main():
 
 
 if __name__ == '__main__':
-    data_file_name = sys.argv[1]
+    train_file_name = sys.argv[1]
     test_file_name = sys.argv[2]
-    main()
+    main(train_file_name,train_file_name)
 
 

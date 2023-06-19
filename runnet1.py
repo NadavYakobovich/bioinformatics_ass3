@@ -2,7 +2,7 @@ import sys
 
 import numpy as np
 
-from buildnet import NeuralNetwork
+from buildnet0 import NeuralNetwork
 
 def load_data(file_path):
     data = []
@@ -10,8 +10,7 @@ def load_data(file_path):
         for line in file:
             line = line.split()
             string = line[0]
-            label = int(line[1])
-            data.append((string, label))
+            data.append(string)
     return data
 
 def load_weights_from_file(file_name):
@@ -39,35 +38,59 @@ def load_weights_from_file(file_name):
 
 #this function get nural network and data and return a txt file that in every line there is the prediction of the network on the data
 def write_predictions_to_file(network, data):
-    file = open("predictions.txt", "w")
-    correct_predictions_counter = 0
-    for input_data, label in data:
+    file = open("output1.txt", "w")
+    for input_data in data:
         prediction = network.forward(input_data)
         predicted_label = 1 if prediction >= 0.5 else 0
-        if predicted_label == label:
-            correct_predictions_counter += 1
+        if predicted_label == 1:
             file.write(str('1') + "\n")
         else:
             file.write(str('0') + "\n")
-    accuracy = correct_predictions_counter / len(data)
-    print("Accuracy: {:.2f}%".format(accuracy * 100))
     file.close()
 
 def preprocess_data(data):
     processed_data = []
-    for string, label in data:
+    for string in  data:
         # Convert string to numpy array of integers
         encoded_string = np.array([int(char) for char in string])
-        processed_data.append((encoded_string, label))
+        processed_data.append(encoded_string)
     return processed_data
+
+#get a file that in each line there is a string and a label and write 2 file one with the string an one with the label
+def create2file(file):
+    file1 = open("test1.txt", "w")
+    file2 = open("label1.txt", "w")
+    with open(file, 'r') as file:
+        for line in file:
+            line = line.split()
+            string = line[0]
+            label = line[1]
+            file1.write(string + "\n")
+            file2.write(label + "\n")
+    file1.close()
+    file2.close()
+
+def comparePrediction(outputfile, labelFile):
+    count = 0
+    output = open(outputfile, "r")
+    label = open(labelFile, "r")
+    size = 0
+    for line1, line2 in zip(output, label):
+        size += 1
+        if line1 == line2:
+            count += 1
+    #print the accuracy
+    print("accuracy: " + str(count/size * 100) + "%")
 
 def main(wnet, data ):
     network = load_weights_from_file(wnet)
     test_data = load_data(data)
-    test_data = preprocess_data(test_data) #make the data to be in the right format (int array)
+    test_data = preprocess_data(test_data) #make the data to be in the right format (np array)
     write_predictions_to_file(network, test_data)
+
 if __name__ == '__main__':
     # get from args 2 arrays the first is the name of the file and the second is the data
-    wnet = sys.argv[1]
-    data = sys.argv[2]
+    wnet = sys.argv[1] # the Wnet file
+    data = sys.argv[2] # the data to test
     main(wnet, data)
+    # comparePrediction("output1.txt", "label1.txt") # if you want to check the accuracy of the network
