@@ -100,9 +100,6 @@ def genetic_algorithm(data):
         for individual in population:
             fitness_scores.append(evaluate_fitness(individual, data))
 
-        # Select parents for crossover
-        # parents = select_parents(population, fitness_scores)
-
         # Create new generation through crossover and mutation
         offspring = new_population(population, fitness_scores)
         worst.append(min(fitness_scores) * 100)
@@ -123,14 +120,8 @@ def new_population(population, fitness_scores):
     #sort the population by the fitness score reverse
     sorted_population = [x for _, x in sorted(zip(fitness_scores, population), key=lambda pair: pair[0])]
     sorted_population.reverse()
-    #add to the new group 10 copies of the best individual, 9 copies of the second best individual and so on
-
-    # for i in range(10):
-    #     new_population_list.append(sorted_population[i].copy())
-    #     for j in range(10-i):
-    #         muted_individual = mutate(sorted_population[i].copy())
-    #         new_population_list.append(muted_individual)
     new_population_list.append(sorted_population[0].copy())
+    # add the 60 copy of the top netWork, each with muted version
     for i in range(60):
         muted_individual = mutate(sorted_population[0].copy())
         new_population_list.append(muted_individual)
