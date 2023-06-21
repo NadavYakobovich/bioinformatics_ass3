@@ -29,7 +29,6 @@ TRAIN_RATIO = 0.6
 RANDOM_RATIO = 0.1
 TRAIN_DATA_PATH = 'train.txt'
 
-
 # Neural Network parameters
 INPUT_SIZE = 16
 HIDDEN_SIZE = 4
@@ -46,6 +45,7 @@ def load_data(file_path):
             label = int(line[1])
             data.append((string, label))
     return data
+
 
 # def split_train_test_data(data, train_ratio=TRAIN_RATIO):
 #     random.shuffle(data)
@@ -67,8 +67,8 @@ def preprocess_data(data):
 # Define the neural network architecture
 class NeuralNetwork:
     def __init__(self):
-        self.weights1 = np.random.randn(INPUT_SIZE * HIDDEN_SIZE).reshape(INPUT_SIZE, HIDDEN_SIZE)   - 0.5 # 16 * 32
-        self.weights2 = np.random.randn(HIDDEN_SIZE * OUTPUT_SIZE).reshape(HIDDEN_SIZE, OUTPUT_SIZE)  - 0.5  # 32 * 1
+        self.weights1 = np.random.randn(INPUT_SIZE * HIDDEN_SIZE).reshape(INPUT_SIZE, HIDDEN_SIZE) - 0.5  # 16 * 32
+        self.weights2 = np.random.randn(HIDDEN_SIZE * OUTPUT_SIZE).reshape(HIDDEN_SIZE, OUTPUT_SIZE) - 0.5  # 32 * 1
 
     def forward(self, x):
         self.hidden = np.dot(x, self.weights1)
@@ -105,7 +105,7 @@ def genetic_algorithm(data):
         worst.append(min(fitness_scores) * 100)
         avrg.append(mean(fitness_scores) * 100)
         best.append(max(fitness_scores) * 100)
-        #print the score of the best individual in the generation
+        # print the score of the best individual in the generation
         print("Best individual score: {:.2f}%".format(max(fitness_scores) * 100))
 
         population = offspring
@@ -114,10 +114,12 @@ def genetic_algorithm(data):
     best_individual = max(population, key=lambda x: evaluate_fitness(x, data))
     PercentPerGeneration(best, worst, avrg)
     return best_individual
-#get from the population the top 5 individuals with the highest fitness score
+
+
+# get from the population the top 5 individuals with the highest fitness score
 def new_population(population, fitness_scores):
     new_population_list = []
-    #sort the population by the fitness score reverse
+    # sort the population by the fitness score reverse
     sorted_population = [x for _, x in sorted(zip(fitness_scores, population), key=lambda pair: pair[0])]
     sorted_population.reverse()
     new_population_list.append(sorted_population[0].copy())
@@ -126,8 +128,8 @@ def new_population(population, fitness_scores):
         muted_individual = mutate(sorted_population[0].copy())
         new_population_list.append(muted_individual)
 
-    #get the top 20% of the population
-    top_population = sorted_population[:int(len(sorted_population)*0.20)]
+    # get the top 20% of the population
+    top_population = sorted_population[:int(len(sorted_population) * 0.20)]
     for _ in range(POPULATION_SIZE - len(new_population_list)):
         parent1, parent2 = random.choice(population), random.choice(population)
         child = crossover(parent1, parent2)
@@ -135,9 +137,6 @@ def new_population(population, fitness_scores):
         new_population_list.append(child)
 
     return new_population_list
-
-
-
 
 
 # Evaluate fitness based on neural network performance
@@ -184,11 +183,11 @@ def mutate(individual):
     return individual
 
 
-#this function get the best individual and write its weights to a file
+# this function get the best individual and write its weights to a file
 def write_weights_to_file(best_individual):
     file = open("wnet1.txt", "w")
-    #write the size of the layers
-    file.write( str(INPUT_SIZE) + " " + str(HIDDEN_SIZE) + "\n")
+    # write the size of the layers
+    file.write(str(INPUT_SIZE) + " " + str(HIDDEN_SIZE) + "\n")
     for row in best_individual.weights1:
         for weight in row:
             file.write(str(weight) + " ")
@@ -198,6 +197,7 @@ def write_weights_to_file(best_individual):
             file.write(str(weight) + " ")
         file.write("\n")
     file.close()
+
 
 # Main code
 def main(train_file, test_file):
@@ -227,6 +227,4 @@ def main(train_file, test_file):
 if __name__ == '__main__':
     train_file_name = sys.argv[1]
     test_file_name = sys.argv[2]
-    main(train_file_name,train_file_name)
-
-
+    main(train_file_name, test_file_name)
